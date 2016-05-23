@@ -9,16 +9,27 @@
 import UIKit
 import RealmSwift
 
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     
     let realm = try! Realm()
-    let taskArray = try! Realm().objects(Task).sorted("date", ascending: false)
+    var taskArray = try! Realm().objects(Task).sorted("date", ascending: false)
+    var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        //サーチバー作成
+        searchBar = UISearchBar()
+        searchBar.delegate = self
+        searchBar.frame = CGRectMake(0, 0, 300, 50)
+        searchBar.layer.position = CGPoint(x: self.view.bounds.width/2, y: 50)
+        searchBar.showsCancelButton = false
+        searchBar.placeholder = "カテゴリを入力してください"
+        searchBar.autocapitalizationType = .None
+        self.navigationItem.titleView = searchBar
     }
 
     override func didReceiveMemoryWarning() {
@@ -39,7 +50,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         // Cellに値を設定する.
         let task = taskArray[indexPath.row]
-        cell.textLabel?.text = task.title
+        cell.textLabel?.text = task.category + " : " + task.title
         
         let formatter = NSDateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
@@ -100,6 +111,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             
             inputViewController.task = task
         }
+        
+        searchBar.showsCancelButton = false
     }
     
     // 入力画面から戻ってきた時に TableView を更新させる
@@ -108,5 +121,27 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         tableView.reloadData()
     }
 
+    
+    func searchBarSearchButtonClicked(searchBar: UISearchBar) {
+        if searchBar.text != "" {
+            let predicate = NSPredicate(format: "category = %@", searchBar.text!)
+            taskArray = try! Realm().objects(Task).filter(predicate).sorted("date", ascending: false)
+            self.tableView.reloadData()
+        } else {
+            taskArray = try! Realm().objects(Task).sorted("date", ascending: false)
+            self.tableView.reloadData()
+        }
+    }
+    
+    func searchBarCancelButtonClicked(searchBar: UISearchBar) {
+        taskArray = try! Realm().objects(Task).sorted("date", ascending: false)
+        searchBar.showsCancelButton = false
+        searchBar.resignFirstResponder()
+        self.tableView.reloadData()
+    }
+    
+    func searchBarTextDidBeginEditing(searchBar: UISearchBar) {
+        searchBar.showsCancelButton = true
+    }
 }
 
